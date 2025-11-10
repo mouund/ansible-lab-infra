@@ -1,0 +1,74 @@
+---
+- name: Configure ansible infra
+  hosts: all
+  vars:
+    controller_packages:
+    - ansible-navigator
+    - ansible-core
+    - container-tools
+    ansible_repo_id: ansible-automation-platform-2.2-for-rhel-9-x86_64-rpms
+    ansible_ssh_priv_key_path: /home/ansible/.ssh/id_rsa
+  tasks:
+  - name: configure controller node
+    become: true
+    when: ansible_facts['fqdn'] == 'workstation'
+    block:
+    - name: Register system to RH
+      redhat_subscription:
+        activationkey: "{{ org_activationkey }}"
+        org_id: "{{ org_id  }}"
+        release: "{{ release }}"  
+        state: present
+    - name: Deploy Ansible core and ansible navigator
+      dnf:
+        state: present
+        enablerepo: "{{ ansible_repo_id  }}"
+        name: "{{ controller_packages }}" 
+    - name: Add the user ansible
+      ansible.builtin.user:
+        name: ansible
+    - name: add nopasswd root sudo perm for ansible user
+      ansible.builtin.copy:
+        content: 'ansible ALL=(ALL:ALL) NOPASSWD:ALL'
+        dest: /etc/sudoers.d/ansible
+    - name: Create ssh folder for ansible user
+      ansible.builtin.file:
+        path: /home/ansible/.ssh/
+        state: directory
+        recurse: yes
+        owner: ansible
+        group: ansible
+    - name: generate ssh keys for ansible
+      community.crypto.openssh_keypair:
+        path: "{{ ansible_ssh_priv_key_path  }}" 
+        size: 2048
+        owner: ansible
+        group: ansible
+    - name: return the ssh pub key and register
+      ansible.builtin.command: cat {{ ansible_ssh_priv_key_path  }}.pub
+      register: ansible_ssh_key
+  - name: Configure managed hosts
+    when: ansible_facts['fqdn'] != 'workstation'
+    become: true
+    block:
+    - name: Add the user ansible
+      ansible.builtin.user:
+        name: ansible
+    - name: add nopasswd root sudo perm for ansible user
+      ansible.builtin.copy:
+        content: 'ansible ALL=(ALL:ALL) NOPASSWD:ALL'
+        dest: /etc/sudoers.d/ansible
+    - name: Create ssh folder for ansible user
+      ansible.builtin.file:
+        path: /home/ansible/.ssh/
+        state: directory
+        recurse: yes
+        owner: ansible
+        group: ansible
+    - name: Distribute keys to managed nodes
+      ansible.builtin.lineinfile:
+        path: /home/ansible/.ssh/authorized_keys
+        line: "{{ hostvars['workstation']['ansible_ssh_key']['stdout']  }}"
+        state: present
+        create: true
+...

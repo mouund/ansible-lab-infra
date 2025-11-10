@@ -1,0 +1,8 @@
+[controllers]
+workstation
+
+[managed]
+servera
+serverb
+serverc
+serverd
