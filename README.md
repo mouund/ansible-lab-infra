@@ -6,12 +6,12 @@ To generate the infra, clone the repo
 git clone git@github.com:mouund/ansible-lab-infra.git
 cd ansible-lab-infra
 ```
-Important, you need to create a vault file with your redhat regustration key and org id  at path `playbook/group_vars/controllers/vault`
+Important, you need to create a vault file with your redhat registration key and org id  at path `playbook/group_vars/controllers/vault`
 
 ```
 ansible-vault create playbook/group_vars/controllers/vault
 ```
-Put set variables like
+Set variables like
 
 ```
 org_activationkey:
@@ -27,7 +27,7 @@ chmod +x generate-ansible-infra.sh
 
 The script will 
 
-- Create 5 VMs using Vagrantfile (you'll need KVM to use the boxes used, feels free to adapt if y2ou want another virtualisation soft)
+- Create 5 VMs using Vagrantfile (you'll need KVM to use the boxes I used in Vagrant, feels free to adapt if you want another hypervisor)
 
 - Setup controller node and distribute ssh keys from controller to managed using ansible
 
@@ -36,11 +36,13 @@ FQDNs will be added to your /etc/hosts so you can ssh using
 ```
 ssh vagrant@workstation
 ```
+Inside the workstation: 
+
 You need to login into `registry.redhat.io`
 Use your redhat credentitals
 
 ```
-registry.redhat.io
+podman login registry.redhat.io
 ```
 
 Once done you can validate from workstation running this playbook.yaml
@@ -64,7 +66,7 @@ server[a:d]
 
 and configs:
 
-ansible-navigator.yaml 
+- ansible-navigator.yaml 
 ```
 ---
 ansible-navigator:
@@ -224,7 +226,7 @@ ansible-navigator:
 #   time-zone: UTC
 
 ```
-ansible.cfg
+- ansible.cfg
 ```
 [defaults]
 # (boolean) By default Ansible will issue a warning when received from a task action (module or action plugin)
@@ -900,5 +902,8 @@ host_key_checking=false
 ;skip=
 
 ```
-
+Run 
+```
+ansible-navigator run playbook.yaml -m stdout
+```
  
